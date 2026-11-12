@@ -1,0 +1,4 @@
+Modelo,MAE,RMSE,segundos_ajuste
+SVR inicial,47.9854,66.4525,0.0469
+SVR optimizada,24.7379,46.9256,0.0441
+Persistencia,45.965,67.2776,0.0

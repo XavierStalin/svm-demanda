@@ -1,0 +1,15 @@
+﻿__pycache__/
+*.pyc
+.venv/
+data/processed/
+mlflow_demanda.db
+mlflow_demanda.log
+mlartifacts_demanda/
+.ipynb_checkpoints/
+data/raw/train.csv
+data/raw/test.csv
+data/raw/stores.csv
+data/raw/oil.csv
+data/raw/holidays_events.csv
+data/raw/transactions.csv
+data/raw/sample_submission.csv
