@@ -1,0 +1,14 @@
+{
+  "grupo": "20261112_121650_70da61",
+  "fuente": "resultados_cuaderno\\20261112_121650_70da61",
+  "run_ids": {
+    "SVR inicial": "4ef9913dc56f40688fef5a637ae414aa",
+    "SVR optimizada": "bf9b9980257842baa56bf497df99793d"
+  },
+  "model_uris": {
+    "SVR inicial": "models:/m-4cb6e8baa489407b9cccacfe0d07e3d4",
+    "SVR optimizada": "models:/m-43ad1dc06d3c42858f267ea32eeb7419"
+  },
+  "estado_runs": "FINISHED",
+  "numero_runs": 18
+}
