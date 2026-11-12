@@ -21,7 +21,49 @@ El dataset no se incluye en el repositorio por el límite de 100 MB de GitHub.
    - train.csv  (obligatorio)
    - stores.csv, oil.csv, holidays_events.csv, transactions.csv, sample_submission.csv (opcionales para este flujo)
 
-## Ejecutar
+## Cuaderno de comparación (SVM inicial y optimizada)
+
+Abrir `Comparacion_SVM_GROCERY_I_MLflow.ipynb` en VS Code con la extensión
+Jupyter, seleccionar el entorno donde se instalaron `requirements.txt` y
+ejecutar todas las celdas en orden. También se puede abrir en una instalación
+existente de Jupyter. El cuaderno incluye explicaciones y resultados ejecutados.
+
+- Detecta `train.csv` tanto en `data/raw/` como en la carpeta existente
+  `store-sales-time-series-forecasting (2)/`; no hace falta mover los CSV.
+- Mantiene GROCERY I, 7 rezagos por 5 variables, la separación temporal 80/20 y
+  16 candidatos con 3 pliegues de validación temporal.
+- Recalcula MAE/RMSE, persistencia y gráficos, con unidades en **miles de unidades**.
+  Corrige la importancia por permutación para medir aumento de RMSE explícitamente.
+- Documenta los cuatro días ausentes imputados con cero y las fechas especiales
+  heredadas de 2019, que quedan inactivas en este historial.
+- Evalúa predicción de **un día con historia real disponible**; no un pronóstico
+  de todos los meses de prueba emitido de una sola vez.
+- Registra 2 modelos principales y 16 candidatos hijos en MLflow, guarda ambos
+  pipelines y comprueba sus predicciones después de recuperarlos.
+
+Cada ejecución guarda sus tablas y figuras en `resultados_cuaderno/<grupo>/`,
+sin sobrescribir `resultados/`. MLflow usa `mlflow_cuaderno.db` y
+`mlartifacts_cuaderno/`. Para iniciar la interfaz desde el cuaderno, cambiar
+`INICIAR_UI = True` en la sección 13 y ejecutar su celda. Se abrirá en
+http://127.0.0.1:5002 y verificará que corresponda a esa base de datos.
+Por defecto el inicio del servidor está desactivado; los registros se guardan
+y los modelos se verifican directamente contra SQLite, sin servidor.
+
+Para abrir la interfaz otro día, desde esta carpeta y con el mismo entorno:
+
+```powershell
+python -m mlflow server --backend-store-uri sqlite:///mlflow_cuaderno.db --host 127.0.0.1 --port 5002 --no-serve-artifacts --workers 1
+```
+
+En el experimento `Comparacion_SVR_GROCERY_I_Cuaderno`, filtrar por la etiqueta
+`comparacion` impresa al ejecutar, seleccionar las 2 ejecuciones principales y
+pulsar **Compare**. Comparar `test_mae`, `test_rmse`, `cv_rmse`, `kernel` y `C`.
+Expandir la optimizada para revisar los candidatos por su `cv_rmse`.
+Los candidatos guardan sus resultados de validación; solo las dos ejecuciones
+principales contienen modelos recuperables. Conservar tanto la base como
+los artefactos para volver a cargar los pipelines.
+
+## Ejecutar el script original
 
 python main.py
 

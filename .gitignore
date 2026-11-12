@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 .venv/
 data/processed/
@@ -13,3 +13,11 @@ data/raw/oil.csv
 data/raw/holidays_events.csv
 data/raw/transactions.csv
 data/raw/sample_submission.csv
+store-sales-time-series-forecasting*/
+
+# Salidas locales del cuaderno de comparación.
+resultados_cuaderno/
+mlflow_cuaderno.db*
+mlflow_cuaderno.log
+mlflow_cuaderno.pid
+mlartifacts_cuaderno/
