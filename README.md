@@ -63,6 +63,50 @@ Los candidatos guardan sus resultados de validación; solo las dos ejecuciones
 principales contienen modelos recuperables. Conservar tanto la base como
 los artefactos para volver a cargar los pipelines.
 
+## Comparación RNN y SVM en un cuaderno independiente
+
+`Comparacion_RNN_vs_SVM_GROCERY_I_MLflow.ipynb` complementa al cuaderno SVM.
+Predice las mismas ventas diarias de GROCERY I (54 tiendas agregadas, miles de
+unidades), con idénticas ventanas, fechas de prueba y tres pliegues temporales.
+La SVM recibe 35 columnas y la RNN la misma información en secuencias de 7 × 5.
+Se comparan SVR inicial/optimizada, RNN inicial/optimizada y persistencia.
+
+Para abrirlo en este equipo, seleccionar el intérprete
+`.venv-rnn/Scripts/python.exe` en VS Code/Jupyter. El entorno separado contiene
+NumPy 1.26 y protobuf 4 para ser compatible con TensorFlow 2.16. El entorno
+original de SVM conserva sus paquetes. La red se ejecuta en CPU y limita hilos.
+
+Para prepararlo en otro equipo con Python 3.12:
+
+```powershell
+py -3.12 -m venv .venv-rnn
+& .\.venv-rnn\Scripts\python.exe -m pip install -r requirements-rnn.txt
+```
+
+Ejecutar el cuaderno completo, en orden. El entrenamiento repetitivo está en
+`rnn_demanda.py`; no es necesario editarlo para ejecutar el cuaderno.
+
+- Recalcula las dos SVR con la grilla original, sin depender de resultados antiguos.
+- Usa SimpleRNN, 16/32 neuronas y tasas 0.001/0.003 (4 candidatos × 3 pliegues).
+- Elige las épocas con EarlyStopping en una partición interna de cada train;
+  evalúa el candidato en una validación externa distinta. Reentrena al final
+  con todo el train usando la mediana de épocas seleccionadas, nunca el test.
+- Invierte el escalado de la respuesta antes de calcular MAE/RMSE en miles de unidades.
+- Exporta tablas, gráficos, casos de siete días, conclusión y modelos recuperables
+  a `resultados_rnn/<grupo>/`. Conserva las salidas SVM anteriores.
+- Registra cuatro modelos principales y cuatro candidatos RNN en el experimento
+  `Comparacion_SVR_RNN_GROCERY_I`, en la misma base `mlflow_cuaderno.db`.
+  Las RNN se guardan como artefactos `.keras` con sus dos escaladores.
+- Comprueba que los cuatro modelos recuperados reproducen sus predicciones;
+  también recupera y verifica una RNN desde los artefactos de MLflow.
+
+La evaluación es diaria, con ventas reales anteriores disponibles. No es un
+pronóstico de todos los meses emitido desde una única fecha. Se conserva la
+imputación original de cuatro días ausentes y la variable especial de 2019
+(inactiva en este historial), y se informa una evaluación adicional sin los
+objetivos imputados. Las búsquedas tienen presupuestos distintos; los resultados
+describen estos experimentos concretos. No se presupone que la RNN gane.
+
 ## Ejecutar el script original
 
 python main.py

@@ -1,0 +1,11 @@
+# Entorno independiente: Python 3.12. No combinar con requirements.txt (NumPy 2).
+numpy==1.26.4
+pandas==2.3.3
+scikit-learn==1.5.2
+matplotlib==3.10.0
+tensorflow==2.16.2
+keras==3.14.1
+protobuf==4.25.9
+mlflow==3.18.0
+ipykernel==7.2.0
+joblib==1.5.3

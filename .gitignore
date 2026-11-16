@@ -21,3 +21,8 @@ mlflow_cuaderno.db*
 mlflow_cuaderno.log
 mlflow_cuaderno.pid
 mlartifacts_cuaderno/
+
+# Entorno y salidas de la comparación RNN.
+.venv-rnn/
+.verificacion_tmp/
+resultados_rnn/
