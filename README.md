@@ -1,13 +1,23 @@
-﻿# SVM Demanda Retail (Store Sales - Kaggle)
+﻿# Comparación SVM y RNN para demanda retail (Store Sales - Kaggle)
 
-Predicción de demanda diaria por familia de producto (GROCERY I) con SVR
-(base vs. optimizada con GridSearchCV) y seguimiento en MLflow.
+Predicción de ventas diarias de GROCERY I, agregadas entre 54 tiendas, con
+SVM de regresión (inicial y optimizada con GridSearchCV) y RNN. MLflow registra
+los modelos, parámetros, métricas y candidatos. Todas las cantidades se expresan
+en **miles de unidades**.
 
 ## Requisitos
 
 1. Python 3.12 con conda o venv.
-2. Instalar dependencias:
-   pip install -r requirements.txt
+2. Para ejecutar los tres cuadernos, usar el entorno compatible con RNN:
+
+   ```powershell
+   py -3.12 -m venv .venv-rnn
+   & .\.venv-rnn\Scripts\python.exe -m pip install -r requirements-rnn.txt
+   ```
+
+   Seleccionar `.venv-rnn/Scripts/python.exe` como kernel. El archivo
+   `requirements.txt` corresponde al flujo SVM original y no debe instalarse
+   encima del entorno RNN.
 3. **Descargar los datos de Kaggle** (ver sección Datos).
 
 ## Datos
@@ -24,7 +34,7 @@ El dataset no se incluye en el repositorio por el límite de 100 MB de GitHub.
 ## Cuaderno de comparación (SVM inicial y optimizada)
 
 Abrir `Comparacion_SVM_GROCERY_I_MLflow.ipynb` en VS Code con la extensión
-Jupyter, seleccionar el entorno donde se instalaron `requirements.txt` y
+Jupyter, seleccionar el entorno `.venv-rnn` y
 ejecutar todas las celdas en orden. También se puede abrir en una instalación
 existente de Jupyter. El cuaderno incluye explicaciones y resultados ejecutados.
 
@@ -38,8 +48,9 @@ existente de Jupyter. El cuaderno incluye explicaciones y resultados ejecutados.
   heredadas de 2019, que quedan inactivas en este historial.
 - Evalúa predicción de **un día con historia real disponible**; no un pronóstico
   de todos los meses de prueba emitido de una sola vez.
-- Registra 2 modelos principales y 16 candidatos hijos en MLflow, guarda ambos
-  pipelines y comprueba sus predicciones después de recuperarlos.
+- Registra las dos SVM y 16 candidatos hijos. Las secciones 15 y 16 incorporan
+  la RNN compatible más reciente y dejan **tres modelos principales** en el mismo
+  experimento. Se conservan los pipelines SVM y la RNN con sus escaladores.
 
 Cada ejecución guarda sus tablas y figuras en `resultados_cuaderno/<grupo>/`,
 sin sobrescribir `resultados/`. MLflow usa `mlflow_cuaderno.db` y
@@ -56,11 +67,12 @@ python -m mlflow server --backend-store-uri sqlite:///mlflow_cuaderno.db --host 
 ```
 
 En el experimento `Comparacion_SVR_GROCERY_I_Cuaderno`, filtrar por la etiqueta
-`comparacion` impresa al ejecutar, seleccionar las 2 ejecuciones principales y
-pulsar **Compare**. Comparar `test_mae`, `test_rmse`, `cv_rmse`, `kernel` y `C`.
+`comparacion` impresa al ejecutar, seleccionar las **3 ejecuciones principales** (SVR inicial, SVR optimizada y RNN)
+y pulsar **Compare**. Comparar `test_mae`, `test_rmse` y `cv_rmse`.
+`kernel` y `C` solo corresponden a SVM.
 Expandir la optimizada para revisar los candidatos por su `cv_rmse`.
-Los candidatos guardan sus resultados de validación; solo las dos ejecuciones
-principales contienen modelos recuperables. Conservar tanto la base como
+Los candidatos guardan sus resultados de validación; los tres modelos
+principales contienen artefactos recuperables. Conservar tanto la base como
 los artefactos para volver a cargar los pipelines.
 
 ## Comparación RNN y SVM en un cuaderno independiente
@@ -129,18 +141,77 @@ Esto:
 - notebooks/   : exploracion
 - probar_candidato.py : carga un modelo de MLflow por Run ID y predice
 
-## Resultados esperados
+## Resultados de la comparación
 
-| Modelo | MAE | RMSE |
-|---|---|---|
-| SVR inicial (C=1, rbf) | 47.99 | 66.45 |
-| SVR optimizada (C=1, linear) | 24.74 | 46.93 |
-| Persistencia | 45.97 | 67.28 |
+Los tres modelos se evalúan en las mismas **337 fechas de prueba**, del
+13/09/2016 al 15/08/2017, con siete días de historia real anterior disponible.
+La partición temporal reserva 1344 días para entrenamiento. Los parámetros se
+seleccionan con validación, antes de evaluar la prueba.
 
-Reduccion de MAE: 48.45% | Reduccion de RMSE: 29.38%
+| Modelo | MAE de prueba | RMSE de prueba |
+|---|---:|---:|
+| SVM inicial | 47.99 | 66.45 |
+| SVM optimizada | 24.74 | 46.93 |
+| RNN | 23.47 | 43.45 |
 
-## Graficos
+La RNN reduce el RMSE un **7.41%** frente a SVM optimizada en esta prueba.
+La búsqueda RNN conserva su configuración inicial, por eso se muestra una sola
+RNN. Un MAE de 23.47 equivale aproximadamente a 23 470 unidades de error diario.
 
-![Comparacion](resultados/comparacion.png)
-![Importancia](resultados/importancia_caracteristicas.png)
-![Optimizacion](resultados/optimizacion.png)
+## Gráficos
+
+### RMSE de validación según kernel y C
+
+**GridSearchCV** evalúa cuatro kernels y cuatro valores de C:
+**16 combinaciones × 3 pliegues temporales = 48 ajustes de validación**, más
+el reajuste final del ganador. El mapa conserva las 16 combinaciones.
+Gana el **kernel lineal con C = 1**, con **RMSE medio de validación 34.58**.
+La escala de color es logarítmica. Estos valores son de validación, no de prueba.
+
+![RMSE medio de validación por kernel y C](resultados/optimizacion.png)
+
+### Comparación de errores de los tres modelos
+
+MAE y RMSE en las mismas 337 fechas de prueba. **Menor es mejor**.
+Estos errores están en miles de unidades y se calculan después de seleccionar
+los modelos mediante validación temporal.
+
+![MAE y RMSE de prueba de SVM inicial, SVM optimizada y RNN](resultados/errores_tres_modelos.png)
+
+### Ventas reales frente a las tres predicciones
+
+Acercamiento a los últimos 60 días de prueba. La comparación global anterior
+usa todos los días, no solo este acercamiento. Ningún modelo acierta mejor
+en todas las fechas.
+
+![Ventas reales y predicciones de los tres modelos](resultados/predicciones_tres_modelos.png)
+
+### Importancia de las variables de SVM optimizada
+
+La importancia por permutación mide el aumento de RMSE al alterar una variable.
+Este gráfico corresponde únicamente a la SVM optimizada.
+
+![Importancia por permutación de SVM optimizada](resultados/importancia_caracteristicas.png)
+
+## Preparar y reproducir los resultados
+
+1. `Comparacion_RNN_vs_SVM_GROCERY_I_MLflow.ipynb`: entrenar la RNN.
+2. `Comparacion_SVM_GROCERY_I_MLflow.ipynb`: entrenar las SVM e integrar los tres
+   modelos en `Comparacion_SVR_GROCERY_I_Cuaderno`.
+3. `Prueba_3_Modelos_por_ID.ipynb`: recuperar los modelos mediante Run ID y predecir.
+
+Ver [orden de ejecución](ORDEN_EJECUCION.md). Los registros MLflow y los resultados
+por ejecución se conservan localmente. Las imágenes y tablas de esta página se
+publican en `resultados/`, que sí se incluye en Git:
+
+- [Métricas de los tres modelos](resultados/comparacion_tres_modelos.csv).
+- [Predicciones por fecha](resultados/predicciones_tres_modelos.csv).
+- [Resultados de GridSearchCV](resultados/gridsearch.csv).
+
+Fuentes de las figuras: cuaderno original, ejecución **20261116_142209_0cef8e**,
+y RNN **20261116_141858_0cdb2f**. Las imágenes se exportaron de los resultados
+verificados, sin volver a entrenar ni modificar los datos.
+
+Se conservan cuatro fechas ausentes imputadas con cero, una dentro de prueba.
+Los cuadernos también muestran métricas sin esa respuesta imputada. Se evalúa
+un día con historia real disponible, no varios meses emitidos desde una sola fecha.
