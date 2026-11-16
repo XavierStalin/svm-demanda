@@ -1,43 +1,86 @@
-# Guion de exposición: SVM inicial y optimizada
+# Guion de exposición: comparación SVM y RNN
 
-**Integrantes:** Daniel, Xavier, Angélica y José. **Duración aproximada:** 6–8 minutos, incluida la demostración de MLflow. Cada integrante tiene una intervención continua. Mostrar los resultados ya preparados en `Resultados_SVM_Sin_Codigo.html` y cambiar a MLflow durante la intervención de José.
+**Integrantes:** Daniel, Xavier, Angélica y José.  
+**Duración aproximada:** 4-5 minutos, incluida una demostración breve de MLflow.  
+**Presentación:** `Comparacion_SVM_RNN_GROCERY_I.pptx`. Mostrar las diapositivas y los resultados preparados, sin código. Cada integrante mantiene una intervención continua.
 
-| Integrante | Tema | Apoyo visual |
+| Integrante | Diapositivas | Tema |
 |---|---|---|
-| Daniel | Objetivo, datos y evaluación | Gráfico de demanda y separación temporal |
-| Xavier | Parte técnica y optimización | Mapa de GridSearchCV |
-| Angélica | Resultados e interpretación | Comparación de errores, predicciones e importancia |
-| José | Demostración y conclusión | Dos casos preparados y MLflow |
+| Daniel | 1-2 | Objetivo, datos y evaluación |
+| Xavier | 3-4 | Selección de modelos y aprendizaje de la RNN |
+| Angélica | 5-6 | Errores y predicciones |
+| José | 7-8 y MLflow | Evidencia, demostración y conclusión |
 
-## Daniel — introducción y contexto
+## Daniel: objetivo y datos
 
-*Mostrar el gráfico de demanda y la separación temporal mientras explica, sin interrumpir el discurso.*
+*Mostrar la portada y avanzar a la diapositiva 2. Señalar la parte dorada del historial, que corresponde a la prueba.*
 
-> Buenos días. Nuestro proyecto compara una SVM inicial con una optimizada para predecir la demanda diaria de la familia GROCERY I. Trabajamos con las ventas agregadas de 54 tiendas, expresadas en miles de unidades. El gráfico muestra variaciones y patrones semanales que buscamos aprovechar mediante los siete días anteriores. Para evaluar el resultado respetamos el orden de las fechas: utilizamos 1.344 días para entrenar y reservamos los 337 más recientes para la prueba. El escenario consiste en predecir un día con la historia real anterior disponible. Xavier explicará cómo seleccionamos la configuración optimizada.
+> Buenos días. Comparamos una SVM de regresión con una red neuronal recurrente para predecir las ventas diarias de GROCERY I, agregadas entre 54 tiendas. Usamos los siete días anteriores para estimar el siguiente. El gráfico muestra las variaciones que buscamos aprender. Reservamos 1344 días para entrenar y los últimos 337 para probar, respetando el orden temporal. Cada predicción supone que conocemos las ventas reales anteriores. Las cantidades se expresan en miles de unidades. Xavier explicará la selección de los modelos.
 
-## Xavier — optimización y selección del modelo
+## Xavier: selección y aprendizaje
 
-*Mostrar el mapa de optimización y señalar la celda del kernel lineal con C = 1.*
+*En la diapositiva 3, señalar las barras de menor error. Pasar a la 4 para explicar las curvas y la configuración RNN.*
 
-> Como estimamos una cantidad numérica, utilizamos SVR, la variante de regresión de las máquinas de vectores de soporte. La configuración inicial tiene kernel RBF y C igual a uno. Para optimizarla usamos GridSearchCV con cuatro kernels y cuatro valores de C: 16 combinaciones evaluadas en tres pliegues temporales, es decir, 48 ajustes de validación. C controla la penalización del error y el kernel define la relación que aprende el modelo. El escalado se ajusta dentro de cada entrenamiento para evitar usar información de validación. El mapa muestra que ganó el kernel lineal con C igual a uno, con un RMSE medio de validación de 34,58 miles de unidades. Elegimos esa configuración antes de revisar la prueba final. Angélica presentará sus resultados.
+> Ambos modelos reciben la misma información: 35 columnas en SVM y una secuencia de siete días por cinco variables en RNN. Para SVM usamos GridSearchCV: 16 combinaciones de kernel y C, evaluadas en tres pliegues temporales, equivalentes a 48 ajustes. Elegimos el menor RMSE de validación, que correspondió al kernel lineal con C igual a uno. MLflow es compatible: registramos explícitamente los parámetros y errores de cada candidato y guardamos el modelo elegido. La RNN utiliza una búsqueda temporal propia de cuatro configuraciones. Conservó 16 neuronas, tasa 0.001 y 53 épocas finales, por lo que su versión inicial y seleccionada coinciden.
 
-## Angélica — resultados y gráficos
+## Angélica: errores y predicciones
 
-*Mostrar la comparación de errores y predicciones; después, el gráfico de importancia. La ampliación de 60 días queda como apoyo opcional.*
+*En la diapositiva 5, comparar las barras de SVM optimizada y RNN. En la 6, señalar las curvas y algún pico subestimado.*
 
-> En los mismos 337 días de prueba, el MAE pasó de 47,99 a 24,74 y el RMSE de 66,45 a 46,93 miles de unidades. Esto representa reducciones del 48,45 y del 29,38 por ciento, respectivamente. El MAE resume el error absoluto promedio y el RMSE penaliza más los errores grandes. La optimizada también superó a la persistencia, que estima para hoy lo vendido ayer y obtuvo un RMSE de 67,28. En las curvas observamos que el modelo optimizado acompaña mejor varios cambios semanales, aunque todavía presenta diferencias frente a las ventas reales. El gráfico de importancia indica que la demanda de ayer es la entrada más relevante, seguida de variables de calendario. José mostrará ahora los resultados guardados en MLflow.
+> El MAE mide el error absoluto promedio y el RMSE penaliza más los errores grandes. La SVM optimizada obtuvo un MAE de 24,74 y un RMSE de 46,93. La RNN alcanzó 23,47 y 43,45, respectivamente, en miles de unidades. Esto representa un 7,41 por ciento menos RMSE frente a la SVM optimizada. En los últimos 60 días, ambos modelos siguen el patrón semanal, aunque subestiman algunos picos. La RNN tiene menor error global en esta prueba, pero no acierta mejor en todas las fechas.
 
-## José — demostración de MLflow y cierre
+## José: evidencia, MLflow y cierre
 
-*Mostrar brevemente los dos casos preparados. Cambiar a MLflow: comparación de las dos ejecuciones, candidatos y detalle de la optimizada con un gráfico y el modelo guardado.*
+*Mostrar la diapositiva 7. Cambiar a MLflow durante unos 40 segundos: comparación de tres modelos y artefactos de la RNN. Después, mostrar el ejemplo de la diapositiva 8.*
 
-> Estos dos casos muestran estimaciones para fechas de prueba con ventas reales conocidas. La conclusión se apoya en todo el período evaluado. En MLflow encontramos las dos ejecuciones principales: SVM inicial y SVM optimizada. La comparación conserva los mismos errores que acabamos de presentar y permite revisar sus parámetros. También se registraron las 16 configuraciones de la búsqueda con sus errores de validación. En los artefactos podemos abrir los gráficos, las tablas y las predicciones; además, quedaron guardados los dos modelos finales, cuya recuperación se verificó. Concluimos que, para GROCERY I y el escenario evaluado, la optimización redujo el MAE un 48,45 por ciento y el RMSE un 29,38 por ciento. MLflow permite conservar y revisar la evidencia de esta mejora. Gracias.
+> Al excluir el día imputado de prueba, la RNN también conserva menor RMSE: 39,40 frente a 40,96 de la SVM optimizada. En MLflow podemos revisar los tres modelos principales: SVM inicial, SVM optimizada y RNN, además de 16 candidatos SVM. Sus artefactos incluyen las predicciones y los modelos guardados. Con el Run ID recuperamos cada modelo y probamos la misma función sin reentrenarlo. En el ejemplo del 15 de agosto, la RNN estimó 213,68 frente a 224,21 reales y tuvo el menor error. Concluimos que la RNN presentó menor error en este experimento. El resultado corresponde a predicciones de un día con historia real disponible. Gracias.
 
-## Preparación breve — no se lee al público
+## Preparación breve: no se lee al público
 
-- Abrir la vista sin código y dejar MLflow funcionando en **http://127.0.0.1:5002**, en **Model training → Training runs**.
-- Usar el experimento **Comparacion_SVR_GROCERY_I_Cuaderno** y el grupo **20261112_121650_70da61**. Preparar **Compare** con las dos ejecuciones principales y las métricas `test_mae` y `test_rmse` visibles.
-- Dejar otra pestaña con las 16 candidatas y otra con el detalle de la optimizada, sus artefactos y el modelo `pipeline_svr`. José solo cambia entre las pestañas ya preparadas.
-- Xavier ayuda a José a preparar MLflow y responde las preguntas más técnicas sobre kernels, C y validación. Los porcentajes expresan reducción del error; las cantidades están en miles de unidades.
+- Abrir el PowerPoint en modo presentación. No hace falta mostrar el cuaderno ni la vista HTML anterior.
+- Dejar MLflow funcionando en **http://127.0.0.1:5002**. Abrir el experimento **Comparacion_SVR_GROCERY_I_Cuaderno**, identificador **1**.
+- Filtrar por `tags.comparacion = '20261116_102624_b851b1' and tags.tipo = 'modelo_principal'`. Preparar **Compare** con las tres ejecuciones principales y las métricas `test_mae` y `test_rmse`. Quitar C y kernel de la comparación, porque no aplican a RNN. Los 16 candidatos SVM tienen métricas de validación.
+- Dejar otra pestaña con los artefactos de **RNN**. La carpeta `modelo_rnn` contiene `modelo.keras` y `preparacion.joblib`, con los escaladores. Xavier ayuda a José a preparar las pestañas.
+- En MLflow aparece una sola RNN porque la búsqueda conservó su configuración inicial. El ejemplo es una fecha histórica de prueba, no una predicción para una fecha futura.
 
-**Referencia rápida:** MAE inicial/optimizada: **47,99 / 24,74**. RMSE inicial/optimizada: **66,45 / 46,93**. Ganador: **lineal, C = 1**. Se conservan las limitaciones del cuaderno: cuatro fechas ausentes imputadas con cero y evaluación de un día con historia real disponible.
+**Referencia rápida:** RMSE SVM inicial **66,45**; SVM optimizada **46,93**; RNN inicial y seleccionada **43,45**; persistencia **67,28**. La reducción **7,41%** compara RNN con SVM optimizada. Las métricas usan miles de unidades. El historial conserva cuatro fechas ausentes imputadas con cero, una de ellas en prueba. La comparación adicional excluye esa respuesta, conservando los mismos modelos.
+
+## Comandos para la demostración
+
+### 1. Abrir MLflow desde PowerShell
+
+Si MLflow ya abre en el navegador, no iniciar otro servidor. De lo contrario, ejecutar:
+
+```powershell
+Set-Location -LiteralPath 'C:\Users\ASUS\Desktop\7mo Ciclo\Aprendizaje automático\Repositorio TrABAJO U2\svm-demanda'
+
+& .\.venv-rnn\Scripts\python.exe -m mlflow server --backend-store-uri sqlite:///mlflow_cuaderno.db --host 127.0.0.1 --port 5002 --no-serve-artifacts --workers 1
+```
+
+Dejar esa terminal abierta. Abrir **http://127.0.0.1:5002** y entrar al experimento **Comparacion_SVR_GROCERY_I_Cuaderno**.
+
+### 2. Comparar los tres modelos en MLflow
+
+Pegar este filtro en **Training runs** (este filtro va en MLflow, no en PowerShell):
+
+```text
+tags.comparacion = '20261116_102624_b851b1' and tags.tipo = 'modelo_principal'
+```
+
+Seleccionar **SVR inicial**, **SVR optimizada** y **RNN**, y pulsar **Compare**. Mostrar `test_mae` y `test_rmse`. Quitar C y kernel de Parameters para la comparación conjunta.
+
+### 3. Probar los tres modelos por ID desde otra terminal
+
+Desde la carpeta `svm-demanda`, ejecutar:
+
+```powershell
+& .\.venv-rnn\Scripts\python.exe .\probar_candidato.py
+```
+
+Para probar únicamente la RNN del grupo indicado con las mismas dos fechas:
+
+```powershell
+& .\.venv-rnn\Scripts\python.exe .\probar_candidato.py --run-id 5c7f54a1107c4c859924ffd84450ebda --fechas 2016-09-13 2017-08-15
+```
+
+La prueba recupera el modelo guardado sin reentrenar. Sin `--run-id`, utiliza los tres IDs de la última comparación completa.
