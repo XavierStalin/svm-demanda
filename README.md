@@ -186,6 +186,15 @@ en todas las fechas.
 
 ![Ventas reales y predicciones de los tres modelos](resultados/predicciones_tres_modelos.png)
 
+### Ejemplo de predicción con los tres modelos
+
+Última diapositiva de la exposición: predicción del **15/08/2017** con los mismos
+siete días de historia. La venta real fue **224.208 miles de unidades** y la RNN
+estimó **213.678**, con el menor error absoluto en esa fecha (**10.530**).
+Es un caso histórico de prueba; la evaluación general utiliza los 337 días.
+
+![Diapositiva: predicción de los tres modelos y comparación con la venta real](resultados/ejemplo_prediccion_tres_modelos.png)
+
 ### Importancia de las variables de SVM optimizada
 
 La importancia por permutación mide el aumento de RMSE al alterar una variable.
