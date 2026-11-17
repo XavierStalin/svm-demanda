@@ -52,3 +52,8 @@ Para publicar esta vista sobre la comparación más reciente ya terminada, sin r
 ```
 
 Este comando es idempotente para la misma comparación: reutiliza los tres modelos con nombre. La RNN incluye la red y los escaladores; se comprueba que los tres modelos recuperados reproduzcan las 337 predicciones de prueba.
+
+
+## Model Registry
+
+Se registran `SVM_inicial`, `SVM_optimizada` y `RNN`, vinculados a su Model ID y Run ID. Cada registro tiene el alias `comparacion_actual`, que apunta a la versión de la comparación publicada. Las descripciones incluyen MAE, RMSE y R2 de prueba. Repetir la publicación del mismo Model ID no crea otra versión; una nueva comparación crea una versión nueva. Este alias identifica la comparación, no un despliegue en producción.

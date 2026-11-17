@@ -55,6 +55,11 @@ def publicar(carpeta):
     for nombre, rid in ids.items():
         nombre_modelo = {"SVR inicial": "SVM_inicial", "SVR optimizada": "SVM_optimizada", "RNN": "RNN"}[nombre]
         run = cliente.get_run(rid)
+        if nombre == "RNN":
+            origen_tiempos = cliente.get_run(run.data.tags["origen_run_id"])
+            mlflow.log_metrics({k: origen_tiempos.data.metrics[k]
+                for k in ["segundos_ajuste", "segundos_busqueda"]}, run_id=rid)
+            run = cliente.get_run(rid)
         tags = {"comparacion": grupo, "vista": "comparacion_tres", "modelo": nombre_modelo,
                 "fecha_ejecucion": grupo[:8], "unidad": "miles_de_unidades"}
         encontrados = [m for m in cliente.search_logged_models([experimento])
@@ -82,7 +87,7 @@ def publicar(carpeta):
                 mid = info.model_id
         cliente.set_logged_model_tags(mid, tags)
         mlflow.log_metrics({k: v for k, v in run.data.metrics.items()
-            if k in ["test_mae", "test_rmse", "test_r2", "cv_rmse"]}, run_id=rid, model_id=mid)
+            if k in ["test_mae", "test_rmse", "test_r2", "cv_rmse", "segundos_ajuste", "segundos_busqueda"]}, run_id=rid, model_id=mid)
         pred = mlflow.pyfunc.load_model("models:/" + mid).predict(test)
         np.testing.assert_allclose(np.asarray(pred).ravel(), esperado[nombre], atol=2e-4, rtol=1e-6)
         modelos[nombre] = {"model_id": mid, "model_uri": "models:/" + mid}
@@ -140,12 +145,33 @@ def publicar(carpeta):
     cliente.set_tag(rid, "candidato_elegido", etiquetas[ganador])
     cliente.log_artifacts(rid, str(destino), artifact_path="explicacion_mlflow")
     candidatos = cliente.search_runs([experimento], f"tags.comparacion = '{grupo}' and tags.tipo = 'candidato_gridsearch'", max_results=100)
+    # Métrica adicional visible como gráfico nativo en Runs, sin abrir Artifacts.
+    inicio_validacion = pd.to_datetime(fechas["Validación desde"]).min()
+    fin_validacion = pd.to_datetime(fechas["Validación hasta"]).max()
+    fecha_media = inicio_validacion + (fin_validacion - inicio_validacion) / 2
+    fecha_media = fecha_media.normalize()
+    metrica_fecha = "RMSE_CV_promedio_fecha_central_" + fecha_media.strftime("%Y_%m_%d")
+    for nombre, datos_modelo in modelos.items():
+        run_modelo = cliente.get_run(ids[nombre])
+        mlflow.log_metrics({metrica_fecha: run_modelo.data.metrics["cv_rmse"]},
+            run_id=ids[nombre], model_id=datos_modelo["model_id"])
+        cliente.set_logged_model_tags(datos_modelo["model_id"], {
+            "validacion_fecha_central": fecha_media.strftime("%Y-%m-%d"),
+            "validacion_desde": inicio_validacion.strftime("%Y-%m-%d"),
+            "validacion_hasta": fin_validacion.strftime("%Y-%m-%d"),
+            "fecha_central_significado": "Punto medio del período; RMSE promedio de tres pliegues, no error de un día."})
     for c in candidatos:
         indice_c = next((i for i,r in cv.iterrows() if
             str(r['param_modelSVM__kernel']) == c.data.params.get('kernel') and
             float(r['param_modelSVM__C']) == float(c.data.params.get('C', 'nan'))), None)
         if indice_c is None: continue
         elegido = indice_c == ganador
+        cliente.log_metric(c.info.run_id, metrica_fecha, float(cv.loc[indice_c, "RMSE_CV"]))
+        cliente.log_param(c.info.run_id, "validacion_fecha_central", fecha_media.strftime("%Y-%m-%d"))
+        cliente.log_param(c.info.run_id, "validacion_periodo_completo_desde", inicio_validacion.strftime("%Y-%m-%d"))
+        cliente.log_param(c.info.run_id, "validacion_periodo_completo_hasta", fin_validacion.strftime("%Y-%m-%d"))
+        cliente.set_tag(c.info.run_id, "fecha_central_significado",
+            "Punto medio del período de validación; el RMSE es el promedio de tres pliegues, no el error de un solo día.")
         cliente.set_tag(c.info.run_id, "mlflow.runName", f"{'ELEGIDO' if elegido else 'Candidato'} | {etiquetas[indice_c]}")
         cliente.set_tag(c.info.run_id, "seleccionado", str(elegido))
         cliente.set_tag(c.info.run_id, "mlflow.note.content", resumen if elegido else
@@ -161,12 +187,51 @@ def publicar(carpeta):
                 "La selección de candidatos se explica en la ejecución SVR optimizada > Artifacts > explicacion_mlflow.")
     indice["logged_models"] = modelos
     indice["filtro_models"] = f"tags.comparacion = '{grupo}' AND tags.vista = 'comparacion_tres'"
+    registrar_modelos(indice, cliente)
     (carpeta / "mlflow_tres_modelos.json").write_text(json.dumps(indice, indent=2), encoding="utf-8")
     visibles = cliente.search_logged_models([experimento], filter_string=indice["filtro_models"])
     assert len(visibles) == 3, f"Se esperaban 3 modelos, hay {len(visibles)}"
     assert {m.name for m in visibles} == {"SVM_inicial", "SVM_optimizada", "RNN"}
     print("MODELS: exactamente tres modelos con filtro:", indice["filtro_models"], flush=True)
     return indice
+
+
+
+def registrar_modelos(indice, cliente):
+    """Una versión por Model ID; repetir la publicación no duplica versiones."""
+    registrados = {}
+    for nombre, datos in indice["logged_models"].items():
+        mid = datos["model_id"]
+        modelo = cliente.get_logged_model(mid)
+        rid = indice["run_ids"][nombre]
+        run = cliente.get_run(rid)
+        nombre_registro = modelo.name
+        descripcion = (f"Predicción diaria de demanda GROCERY I en miles de unidades. "
+            f"Comparación {indice['grupo']}. "
+            f"MAE test: {run.data.metrics['test_mae']:.4f}; "
+            f"RMSE test: {run.data.metrics['test_rmse']:.4f}; "
+            f"R2 test: {run.data.metrics['test_r2']:.4f}. "
+            "Evaluación histórica de un paso con siete días de historia observada. "
+            "Las métricas y gráficos completos están en la ejecución de origen.")
+        existentes = cliente.search_registered_models(filter_string=f"name = '{nombre_registro}'")
+        if not existentes:
+            cliente.create_registered_model(nombre_registro, description=descripcion)
+        else:
+            cliente.update_registered_model(nombre_registro, description=descripcion)
+        versiones = cliente.search_model_versions(f"name = '{nombre_registro}'")
+        misma = next((v for v in versiones if getattr(v, 'model_id', None) == mid
+            or v.tags.get('model_id') == mid), None)
+        if misma is None:
+            misma = cliente.create_model_version(name=nombre_registro, source=modelo.artifact_location,
+                run_id=rid, model_id=mid, description=descripcion,
+                tags={"model_id": mid, "comparacion": indice["grupo"], "unidad": "miles_de_unidades"})
+        assert misma.status == "READY", misma.status
+        cliente.set_registered_model_alias(nombre_registro, "comparacion_actual", misma.version)
+        registrados[nombre] = {"nombre": nombre_registro, "version": misma.version,
+            "model_id": mid, "uri": f"models:/{nombre_registro}@comparacion_actual"}
+        print(f"Registry: {nombre_registro}, versión {misma.version}, READY", flush=True)
+    indice["model_registry"] = registrados
+    return registrados
 
 
 def publicar_compatible(carpeta):
