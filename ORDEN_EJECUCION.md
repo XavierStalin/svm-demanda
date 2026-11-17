@@ -34,3 +34,21 @@ puede usarse el grupo fijo indicado en el guion.
 Si no cambian los datos ni la configuración, no es necesario reentrenar.
 Se puede abrir MLflow y ejecutar únicamente `Prueba_3_Modelos_por_ID.ipynb`.
 Conservar `resultados_rnn`, `resultados_cuaderno`, `mlflow_cuaderno.db` y `mlartifacts_cuaderno`.
+
+
+## Exponer directamente en MLflow
+
+En el experimento `Comparacion_SVR_GROCERY_I_Cuaderno`:
+
+1. **Models:** usar el filtro de Models impreso al final del cuaderno. Aparecen `SVM_inicial`, `SVM_optimizada` y `RNN`, con sus Model ID y métricas. Se retiraron del catálogo los ocho pipeline_svr antiguos; sus ejecuciones siguen disponibles en Runs.
+2. **Runs:** filtrar `tags.comparacion = '<grupo>' and tags.tipo = 'modelo_principal'` para comparar MAE, RMSE y R2 de los tres.
+3. Abrir **SVR optimizada**: su descripción explica qué candidato ganó y por qué. En **Artifacts > explicacion_mlflow** abrir `01_candidatos_y_elegido.png` y `02_rmse_por_fechas_validacion.png`. Las tablas CSV incluyen las fechas y el RMSE de cada candidato por pliegue. El mapa C/kernel sigue en **Artifacts > resultados > optimizacion.png**.
+4. Quitar el filtro `tipo = 'modelo_principal'` y expandir la SVM optimizada para ver los 16 candidatos hijos. El ganador se llama **ELEGIDO | linear | C=1**. Sus parámetros muestran las fechas de validación.
+
+Para publicar esta vista sobre la comparación más reciente ya terminada, sin reentrenar:
+
+```powershell
+& .\.venv-rnn\Scripts\python.exe -X utf8 mlflow_presentacion.py
+```
+
+Este comando es idempotente para la misma comparación: reutiliza los tres modelos con nombre. La RNN incluye la red y los escaladores; se comprueba que los tres modelos recuperados reproduzcan las 337 predicciones de prueba.

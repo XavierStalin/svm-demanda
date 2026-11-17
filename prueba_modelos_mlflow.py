@@ -86,13 +86,24 @@ def probar_modelo_desde_mlflow(run_id: str, fechas: list[str], *, tracking_uri=T
             origen = run.data.tags.get('origen_run_id', run_id)
             ruta_diario = descargar(origen, 'resultados/demanda_diaria.csv')
         else:
-            salidas = getattr(run.outputs, 'model_outputs', []) if run.outputs else []
-            if salidas:
-                uri = 'models:/' + salidas[0].model_id
+            # Preferir el modelo principal con nombre, sin depender del orden de outputs.
+            disponibles = [m for m in cliente.search_logged_models([str(run.info.experiment_id)])
+                           if m.source_run_id == run_id]
+            disponibles.sort(key=lambda m: m.name not in {'SVM_inicial', 'SVM_optimizada'})
+            if disponibles:
+                uri = 'models:/' + disponibles[0].model_id
             elif 'pipeline_svr' in raices:
                 uri = f'runs:/{run_id}/pipeline_svr'
             else:
-                raise ValueError('Este ID no contiene un modelo SVR final guardado.')
+                # Los archivos propios de modelos históricos se conservan aunque se
+                # quite su entrada de Models, para poder reproducir los Run ID antiguos.
+                salidas = getattr(run.outputs, 'model_outputs', []) if run.outputs else []
+                locales = [BASE / 'mlartifacts_cuaderno' / 'models' / m.model_id / 'artifacts'
+                           for m in salidas]
+                locales = [p for p in locales if (p / 'MLmodel').is_file()]
+                if not locales:
+                    raise ValueError('Este ID no contiene un modelo SVR final guardado.')
+                uri = str(locales[0])
             modelo = mlflow.sklearn.load_model(uri)
             ruta_meta = descargar(run_id, 'resultados/metadatos_experimento.json')
             ruta_diario = descargar(run_id, 'resultados/demanda_diaria.csv')

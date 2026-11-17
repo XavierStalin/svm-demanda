@@ -224,3 +224,8 @@ verificados, sin volver a entrenar ni modificar los datos.
 Se conservan cuatro fechas ausentes imputadas con cero, una dentro de prueba.
 Los cuadernos también muestran métricas sin esa respuesta imputada. Se evalúa
 un día con historia real disponible, no varios meses emitidos desde una sola fecha.
+
+
+### Vista de exposición en MLflow
+
+En **Models**, el filtro impreso por el cuaderno muestra `SVM_inicial`, `SVM_optimizada` y `RNN`, cada uno con su Model ID. Las ejecuciones anteriores quedan como historial en Runs; se retiraron del catálogo los ocho pipeline_svr antiguos. En **Runs > SVR optimizada**, la descripción y **Artifacts > explicacion_mlflow** muestran el ranking de los 16 candidatos y su RMSE por fechas de validación. El candidato elegido se identifica también en los hijos de GridSearchCV. Ver [instrucciones para la exposición](ORDEN_EJECUCION.md).
